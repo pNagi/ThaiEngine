@@ -2,26 +2,25 @@
 #include <fstream>
 #include <iostream>
 #include <iconv.h>
-#include <bitset>
 
 using namespace std;
 
 #define MAX_SYLLABLE_TEXTSIZE 1023
 
+uint32_t id;
+uint16_t info;
+uint32_t mapFilePos;
+int64_t timestamp;
+
+char raw[MAX_SYLLABLE_TEXTSIZE];
+char text[MAX_SYLLABLE_TEXTSIZE];
+
 void read_record(ifstream &in, iconv_t conv) {
 
-    uint32_t id;
-    uint16_t info;
-    uint32_t mapFilePos;
-    uint64_t timestamp;
-    char raw[MAX_SYLLABLE_TEXTSIZE];
-    char text[MAX_SYLLABLE_TEXTSIZE];
     memset(raw, 0, sizeof(raw));
     memset(text, 0, sizeof(text));
 
     in.read((char*) &id, sizeof(uint32_t));
-    cout << "id: " << id;
-
     in.read((char*) &info, sizeof(uint16_t));
 
     bitset<2> lang(bitset<2>(info).to_string());
@@ -31,32 +30,19 @@ void read_record(ifstream &in, iconv_t conv) {
     bitset<1> numeric(bitset<1>(info >>= 1).to_string());
     bitset<1> _filler(bitset<1>(info >>= 1).to_string());
 
-    cout << " lang: " << lang.to_ulong()
-    << " length: " << length.to_ulong()
-    << " hasTailSpace: " << hasTailSpace.to_ulong()
-    << " isUnused: " << isUnused.to_ulong()
-    << " numeric: " << numeric.to_ulong()
-    << " _filler: " << _filler.to_ulong();
-
     in.seekg(2, ios::cur);
-
     in.read((char*) &mapFilePos, sizeof(uint32_t));
-    cout << " mapFilePos: " << mapFilePos;
 
-    //check
+    //check if 32bit or 64bit file
     in.seekg(8, ios::cur);
     int checker;
-    in.read((char*) & checker, sizeof(int));
-    in.seekg(-12, ios::cur);
+    in.read((char*) &checker, sizeof(int));
+    in.seekg(-8-sizeof(int), ios::cur);
 
     if (checker != 0) {
-        uint32_t time32;
-        in.read((char*) &time32, sizeof(uint32_t));
-        cout << " timestamp: " << time32 << endl;
+        in.read((char*) &timestamp, sizeof(int32_t));
     } else {
-        in.read((char*) &timestamp, sizeof(uint64_t));
-        cout << " timestamp: " << timestamp << endl;
-
+        in.read((char*) &timestamp, sizeof(int64_t));
         in.seekg(4, ios::cur);
     }
 
@@ -72,6 +58,15 @@ void read_record(ifstream &in, iconv_t conv) {
     iconv(conv, &src, &srclen, &des, &deslen);
     in.seekg(1, ios::cur);
 
+    cout << "id: " << id;
+    cout << " lang: " << lang.to_ulong()
+    << " length: " << length.to_ulong()
+    << " hasTailSpace: " << hasTailSpace.to_ulong()
+    << " isUnused: " << isUnused.to_ulong()
+    << " numeric: " << numeric.to_ulong()
+    << " _filler: " << _filler.to_ulong();
+    cout << " mapFilePos: " << mapFilePos;
+    cout << " timestamp: " << timestamp << endl;
     cout << "text: " << text << endl << endl;
 }
 
@@ -92,6 +87,5 @@ int main(int argc, char* argv[]) {
     }
 
     iconv_close(conv);
-
     return 0;
 }
