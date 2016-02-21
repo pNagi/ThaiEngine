@@ -20,6 +20,7 @@ namespace Reader {
         data_record record;
 
         char text[MAX_SYLLABLE_TEXTSIZE];
+        memset(text, 0, sizeof(text));
 
         in.read((char*) &record.header, sizeof(record.header));
 
@@ -27,7 +28,9 @@ namespace Reader {
             in.read((char*) &record.timestamp, sizeof(int64_t));
             in.seekg(4, ios::cur);
         } else if (file_type == FILE_TYPE_32) {
-            in.read((char*) &record.timestamp, sizeof(int32_t));
+            int32_t timestamp;
+            in.read((char*) &timestamp, sizeof(int32_t));
+            record.timestamp = (int64_t) timestamp;
         }
 
         for (int i = 0 ; i < record.header.length ; i++) {
@@ -43,6 +46,10 @@ namespace Reader {
         in.seekg(1, ios::cur);
 
         return record;
+    }
+
+    bool Reader::has_next() {
+        return !(in.peek() == EOF);
     }
 
     void Reader::close() {

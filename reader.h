@@ -26,6 +26,7 @@ namespace Reader {
     public:
         Reader(char*);
         data_record read();
+        bool has_next();
         void close();
     private:
         ifstream in;
