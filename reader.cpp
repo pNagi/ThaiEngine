@@ -1,91 +1,67 @@
-#include <stdio.h>
-#include <fstream>
-#include <iostream>
-#include <iconv.h>
+#include "reader.h"
+
+#define FILE_TYPE_32 32
+#define FILE_TYPE_64 64
+#define FILEID_SIZE 256
+#define MAX_SYLLABLE_TEXTSIZE 1023
 
 using namespace std;
 
-#define MAX_SYLLABLE_TEXTSIZE 1023
+namespace Reader {
 
-uint32_t id;
-uint16_t info;
-uint32_t mapFilePos;
-int64_t timestamp;
-
-char raw[MAX_SYLLABLE_TEXTSIZE];
-char text[MAX_SYLLABLE_TEXTSIZE];
-
-void read_record(ifstream &in, iconv_t conv) {
-
-    memset(raw, 0, sizeof(raw));
-    memset(text, 0, sizeof(text));
-
-    in.read((char*) &id, sizeof(uint32_t));
-    in.read((char*) &info, sizeof(uint16_t));
-
-    bitset<2> lang(bitset<2>(info).to_string());
-    bitset<10> length(bitset<10>(info >>= 2).to_string());
-    bitset<1> hasTailSpace(bitset<1>(info >>= 10).to_string());
-    bitset<1> isUnused(bitset<1>(info >>= 1).to_string());
-    bitset<1> numeric(bitset<1>(info >>= 1).to_string());
-    bitset<1> _filler(bitset<1>(info >>= 1).to_string());
-
-    in.seekg(2, ios::cur);
-    in.read((char*) &mapFilePos, sizeof(uint32_t));
-
-    //check if 32bit or 64bit file
-    in.seekg(8, ios::cur);
-    int checker;
-    in.read((char*) &checker, sizeof(int));
-    in.seekg(-8-sizeof(int), ios::cur);
-
-    if (checker != 0) {
-        in.read((char*) &timestamp, sizeof(int32_t));
-    } else {
-        in.read((char*) &timestamp, sizeof(int64_t));
-        in.seekg(4, ios::cur);
+    Reader::Reader(char* file_name) {
+        in.open(file_name, ios::binary);
+        conv = iconv_open("UTF-8","CP874");
+        check_file_type();
+        in.seekg(256, ios::beg);
     }
 
-    for (int i = 0 ; i < length.to_ulong() ; i++) {
-        in.read((char*) &raw[i], sizeof(char));
-    }
+    data_record Reader::read() {
+        data_record record;
 
-    char* src = &raw[0];
-    char* des = &text[0];
-    size_t srclen = sizeof(raw);
-    size_t deslen = sizeof(text);
+        char text[MAX_SYLLABLE_TEXTSIZE];
 
-    iconv(conv, &src, &srclen, &des, &deslen);
-    in.seekg(1, ios::cur);
+        in.read((char*) &record.header, sizeof(record.header));
 
-    cout << "id: " << id;
-    cout << " lang: " << lang.to_ulong()
-    << " length: " << length.to_ulong()
-    << " hasTailSpace: " << hasTailSpace.to_ulong()
-    << " isUnused: " << isUnused.to_ulong()
-    << " numeric: " << numeric.to_ulong()
-    << " _filler: " << _filler.to_ulong();
-    cout << " mapFilePos: " << mapFilePos;
-    cout << " timestamp: " << timestamp << endl;
-    cout << "text: " << text << endl << endl;
-}
-
-int main(int argc, char* argv[]) {
-
-    ifstream in(argv[1], ios::binary);
-    iconv_t conv = iconv_open("UTF-8","CP874");
-
-    in.seekg(256, ios::beg);
-
-    while(!in.eof()) {
-        try {
-            read_record(in, conv);
-        } catch (int e) {
-            cout << "error!";
-            break;
+        if (file_type == FILE_TYPE_64) {
+            in.read((char*) &record.timestamp, sizeof(int64_t));
+            in.seekg(4, ios::cur);
+        } else if (file_type == FILE_TYPE_32) {
+            in.read((char*) &record.timestamp, sizeof(int32_t));
         }
+
+        for (int i = 0 ; i < record.header.length ; i++) {
+            in.read((char*) &text[i], sizeof(char));
+        }
+
+        char* src = &text[0];
+        char* des = &record.text[0];
+        size_t srclen = sizeof(text);
+        size_t deslen = sizeof(record.text);
+
+        iconv(conv, &src, &srclen, &des, &deslen);
+        in.seekg(1, ios::cur);
+
+        return record;
     }
 
-    iconv_close(conv);
-    return 0;
+    void Reader::close() {
+        iconv_close(conv);
+    }
+
+    int Reader::check_file_type() {
+        data_record record;
+        in.seekg(256 + 8 + sizeof(record.header), ios::beg);
+
+        int checker;
+        in.read((char*) &checker, sizeof(int));
+
+        if (checker != 0) {
+            file_type = FILE_TYPE_32;
+        } else {
+            file_type = FILE_TYPE_64;
+        }
+
+        return file_type;
+    }
 }
