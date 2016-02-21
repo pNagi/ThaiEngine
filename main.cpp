@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <iostream>
 #include <vector>
-#include "reader.h"
+#include "counter.h"
 
 using namespace std;
 
@@ -15,15 +15,19 @@ void print_record(Reader::data_record record) {
     << " _filler: " << record.header._filler
     << " mapFilePos: " << record.header.mapFilePos
     << " timestamp: " << record.timestamp << endl;
-    cout << "text: " << record.text << endl << endl;
+    cout << "text: " << record.text << endl;
 }
 
 int main(int argc, char* argv[]) {
     Reader::Reader reader(argv[1]);
+    Counter::Counter counter;
 
     while(reader.has_next()) {
         try {
-            print_record(reader.read());
+            Reader::data_record record = reader.read();
+            print_record(record);
+            counter.push();
+            cout << "counter: " << counter.count() << endl << endl;
         } catch (int e) {
             cout << "error!";
             break;
