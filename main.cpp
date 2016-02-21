@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <iostream>
 #include <vector>
+#include "reader.h"
 #include "counter.h"
 
 using namespace std;
@@ -26,7 +27,7 @@ int main(int argc, char* argv[]) {
         try {
             Reader::data_record record = reader.read();
             print_record(record);
-            counter.push();
+            counter.push(record);
             cout << "counter: " << counter.count() << endl << endl;
         } catch (int e) {
             cout << "error!";

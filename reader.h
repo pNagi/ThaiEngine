@@ -1,3 +1,6 @@
+#ifndef READER_H
+#define READER_H
+
 #include <fstream>
 #include <iconv.h>
 
@@ -35,3 +38,5 @@ namespace Reader {
         int check_file_type();
     };
 }
+
+#endif
