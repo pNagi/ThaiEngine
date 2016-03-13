@@ -16,25 +16,24 @@ namespace Counter {
     }
 
     int Counter::count() {
-        return records.size();
+        return (int) records.size();
     }
 
     Alphabet* Counter::add(string text, Reader::data_record record) {
-        cout << "In add" << endl;
+        cout << "In add: " << text << endl;
         Alphabet* al;
 
         if (!Counter::contain(text[0])) {
-            cout << "not contain" << endl;
+            cout << text[0] << " not contain" << endl;
             al = Counter::create(text[0], record);
         } else {
-            cout << "contain" << endl;
+            cout << text[0] << " contain" << endl;
             al = Counter::get(text[0]);
             al->records.push_back(record);
         }
 
-
-
         if (text.length() == 1) {
+            cout << "end of recursive" << endl;
             return al;
         }
 
@@ -49,7 +48,7 @@ namespace Counter {
             }
         }
 
-        return false;
+        return nullptr;
     }
 
     bool Counter::contain(char c) {
@@ -64,7 +63,7 @@ namespace Counter {
 
     Alphabet* Counter::create(char c, Reader::data_record record) {
         cout << "In create" << endl;
-        Alphabet* al;
+        Alphabet* al = (Alphabet *) malloc(sizeof(Alphabet));
         al->c = c;
         cout << "create" << endl;
         al->records.push_back(record);

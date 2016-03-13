@@ -1,6 +1,4 @@
-#include <stdio.h>
 #include <iostream>
-#include <vector>
 #include "reader.h"
 #include "counter.h"
 
