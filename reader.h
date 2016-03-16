@@ -23,6 +23,18 @@ namespace Reader {
         } header;
         int64_t timestamp;
         char text[MAX_SYLLABLE_TEXTSIZE];
+        bool operator==(const data_record& a) {
+            return a.header.id == header.id
+                && a.header.lang == header.lang
+                && a.header.length == header.length
+                && a.header.hasTailSpace == header.hasTailSpace
+                && a.header.isUnused == header.isUnused
+                && a.header.numeric == header.numeric
+                && a.header._filler == header._filler
+                && a.header.mapFilePos == header.mapFilePos
+                && a.timestamp == timestamp
+                && a.text == text;
+        }
     };
 
     class Reader {
